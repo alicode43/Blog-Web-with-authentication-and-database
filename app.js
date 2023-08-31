@@ -83,21 +83,27 @@ app.get("/posts/edit/:postName", async (req, res) =>{
 });
 
 app.post('/edit', async function(req, res){
-  console.log("Req "+req.body.title);
-  const x=await Post.updateOne({title:req.body.postTitle}, {$set:{content: req.body.postBody}});
-  var compose=new Post({
-    id:req.body._id,
-    title: req.body.postTitle,
-    content: req.body.postBody,
-  });
+  const selectedAction = req.body.action;
+    
+  if (selectedAction === 'action2') {
+    // Handle action 1 submission
+    const x=await Post.deleteOne({title:req.body.postTitle});
+  res.redirect('/');
+  } 
+  else if (selectedAction === 'action1') {
+   
+    const x=await Post.updateOne({title:req.body.postTitle}, {$set:{content: req.body.postBody}});
   
-  console.log("compose: " + compose);
-  console.log("details is "+x);
-    res.redirect('/');
+      res.redirect('/');
+  }
+  
+ 
 });
 
-// app.get('/delete)
+// app.post('/delete', async function(req, res){
 
+ 
+// });
 app.get("/compose", (req, res) =>{
   if(req.isAuthenticated()){
       res.render("compose");
