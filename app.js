@@ -1,6 +1,3 @@
-//jshint esversion:6
-
-// require('dotenv').config();
 const express = require("express");
 const bodyParser=require("body-parser");
 const ejs = require("ejs");
@@ -9,7 +6,7 @@ const session = require('express-session');
 const passport = require('passport');
 const passportLocalMongoose = require('passport-local-mongoose');
 const findOrCreate = require('mongoose-find-or-create')
-
+var _ = require('lodash')
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
@@ -29,21 +26,12 @@ mongoose.connect("mongodb://127.0.0.1:27017/blog");
 app.use(passport.initialize());
   app.use(passport.session());
 
-
-
 const postSchema =new mongoose.Schema({
   title:String,
   content:String
 })
 
-
-// postSchema.plugin(passportLocalMongoose);
-// postSchema.plugin(findOrCreate);
-
 const Post=mongoose.model('post', postSchema);
-
-
-
 
 const userSchema=new mongoose.Schema({
   email:String,
@@ -59,17 +47,6 @@ const User=new mongoose.model("User" ,userSchema);
 passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
-
-
-
-
-// const post1=new Post({
-//   title:"DBMS",
-//   content:"dbms is very usefull topic to learn"
-// })
-// post1.save();
-
-
 
 let posts = [];
 
@@ -88,9 +65,38 @@ app.get("/contact", function(req, res){
   res.render("contact", {contactContent: contactContent});
 });
 
-// app.get("/compose", function(req, res){
-//   res.render("compose");
-// });
+app.get("/posts/edit/:postName", async (req, res) =>{
+  // console.log("Login "+req.isAuthenticated());
+  if(req.isAuthenticated()){
+
+       const requestedTitle = req.params.postName;
+
+      // console.log(requestedTitle);
+      const x = await Post.findOne({_id: requestedTitle});
+
+        res.render("edit", {title:x.title, content:x.content} );
+    
+    }
+    else{
+      res.redirect('/login');
+    }
+});
+
+app.post('/edit', async function(req, res){
+  console.log("Req "+req.body.title);
+  const x=await Post.updateOne({title:req.body.postTitle}, {$set:{content: req.body.postBody}});
+  var compose=new Post({
+    id:req.body._id,
+    title: req.body.postTitle,
+    content: req.body.postBody,
+  });
+  
+  console.log("compose: " + compose);
+  console.log("details is "+x);
+    res.redirect('/');
+});
+
+// app.get('/delete)
 
 app.get("/compose", (req, res) =>{
   if(req.isAuthenticated()){
@@ -119,6 +125,7 @@ app.post("/compose", function(req, res){
 app.get("/login", function(req, res){
   res.render("login");
 });
+
 app.post('/login', async (req, res) =>{
   const user = new User({
      username:req.body.username,
@@ -130,7 +137,7 @@ app.post('/login', async (req, res) =>{
      }
      else{
          passport.authenticate("local")(req,res, function(){
-             res.redirect("/compose");
+          res.redirect('compose')
          });
      }
   });
@@ -160,33 +167,19 @@ app.post('/register', async (req, res) =>{
 })
 
 
+
 app.get("/posts/:postName", async function(req, res){
-  const requestedTitle = _.lowerCase(req.params.postName);
-  
-  // res.render("home", {posts:x});
-  // res.render("post", {title:" x.title", content:" x.content"});
-  
-  const x = await Post.findOne({title: requestedTitle});
-  console.log(x);
-  console.log(x!=null);
-    if(x!=null){
+  const requestedTitle = req.params.postName;
+
+  // console.log(requestedTitle);
+  const x = await Post.findOne({_id: requestedTitle});
+  // console.log(x);
+  if(x!=null){
       res.render("post", {title: x.title, content: x.content});
     }
     else{
       res.redirect("/");
     }
-
-  
-
-
-    // login page
-
-
-    
-
-
-
-
 });
 
 app.listen(3000, function() {
